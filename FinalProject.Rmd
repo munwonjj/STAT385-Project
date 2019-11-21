@@ -5,3 +5,8 @@ Members: "Jonah Toch, Munwon Jung, Michael Kolimas, Chris Zhu, Mian Li"
 output: html_notebook
 ---
 
+```{r}
+ccso = read.csv("https://uofi.box.com/shared/static/9elozjsg99bgcb7gb546wlfr3r2gc9b7.csv")
+ccso
+```
+
