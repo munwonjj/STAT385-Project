@@ -1,0 +1,7 @@
+---
+Title: "What factors influence days in Jail?"
+Members: "Jonah Toch, Munwon Jung, Michael Kolimas, Chris Zhu, Mian Li"
+
+output: html_notebook
+---
+
