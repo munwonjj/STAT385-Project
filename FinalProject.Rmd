@@ -1,12 +1,34 @@
----
-Title: "What factors influence days in Jail?"
+
+STAT385 Final Project Proposal
+Title: "Tentative Title of the Project: Are Certain Races Disproportionately Being Incarcerated In The Champaign County?"
+
 Members: "Jonah Toch, Munwon Jung, Michael Kolimas, Chris Zhu, Mian Li"
 
 output: html_notebook
----
+
 
 ```{r}
 ccso = read.csv("https://uofi.box.com/shared/static/9elozjsg99bgcb7gb546wlfr3r2gc9b7.csv")
 ccso
 ```
+
+The Dataset: We are using the CCSO Bookings Data. The dataset contains over 67764 observations and 12 columns for individuals who were booked into jail in Champaign County between the years 2011-2016. The individuals are not identifiable based on personal identity, but they are given unique jacket numbers. The demographics of the people, reasons for being booked, and crime code are also given in the data. The original source is the Champaign County Sheriff Office (CCSO). For more information, you can check https://github.com/CUHackNight/JailData. 
+
+
+Summary of our intentions and goals:
+
+-Problem: We are worried certain races and factors such as employment, status, and citizenship affect the rate at which people are incarcerated and for how long. 
+-Objective: We are going to perform linear regression in an interactive shiny application to help visualize how certain predictive factors affect how long someone is in jail. Afterwards, we will be able to make a conclusion on whether there is evidence certain traits such as race disproportionately affect how long someone is in jail.
+
+Storyboard:
+
+
+-The Process: We are going to start by building a linear regression model off of the CCSO dataset. The predicting data will be variables such as race, gender, employment, status, citizenship, along with other factors, and the response variable will be days in jail. To accomplish this, we will need to clean the data, change the factor variables into numeric indicator variables, and make sure all statistical assumptions are satisfied. We also plan on other methods of visualization, such as creating a histogram where the x-axis shows different factor variables like race, and the y-axis shows average days in jail. 
+
+After we create the model we are going to utilize shiny to give the user the ability to input data directly into the model. The categorical variables will have a drop-down menu where the user can switch between races such as ‘black’, ‘white’, ‘hispanic’, etc. The numerical variables such as age will have a slider so they can see how age at arrest affects how long someone may be incarcerated for.
+
+To make updates on our file our group it going to use GitHub. We will take turns updating the master file and make sure our version control is well documented. 
+
+
+In the end, we will be able to reach a conclusion on whether certain traits such as race disproportionately affect how long someone is in jail.
 
