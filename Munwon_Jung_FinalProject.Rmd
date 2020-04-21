@@ -1,0 +1,458 @@
+
+```{r}
+#Load in libraries and data
+library(readxl)
+library(shiny)
+library(tidyverse)
+library(ggplot2)
+library(ggrepel)
+
+ccso = read.csv("ccso_illinois.csv")
+```
+
+
+```{r}
+#Create Model for prediction: Note it is a log model
+model = lm(I(log(Days)) ~  RACE + EMPLOYMENT.STATUS + CITY + SEX + CITIZENSHIP + MARITIAL.STATUS + MILITARY + ARREST.AGENCY+ Age.at.Arrest + MID.LEVEL.CODE + Offense.Level + Bond.Posted, data = ccso)
+#Get coefficients from model
+sum_model = round((exp(summary(model)$coefficients)-1)*100,2)
+#Create model's qqplot to visualize effectivness of the model
+modelqq = ggplot(model,mapping = aes(sample = model$residuals))+
+            stat_qq(color = rgb(0,0,0,alpha = .2))+
+            stat_qq_line(color= "blue")+
+            #Annotation of the R^2 of the model added
+            annotate("text", x = -2.5, y = 3, 
+                     label = paste("The R ^ 2 value is:",round(summary(model)$r.squared,4)))+
+            labs(title = "Q-Q Plot of the Model", x = "Theoretical", y = "Sample")+
+            theme_minimal()+
+            theme(text = element_text(size = 30),  
+                  axis.text.x = element_text(size = 10),
+                  axis.text.y = element_text(size = 10))
+```
+
+
+```{r}
+#Filtering the RACE data to take care of the blank
+RaceData = ccso %>% filter(RACE != "") %>% select(Days.in.Jail, RACE) %>% group_by(RACE) %>%
+summarise(meanSize = round(mean(Days.in.Jail), 0), n=n()) %>% arrange(desc(n))
+#Creating the ggplot for Race
+Race = ggplot(RaceData[0:5, ], aes(x = RACE, y = meanSize, fill = RACE, label = n)) + geom_bar(stat = "identity") + theme_minimal() + labs(title = "Average days in Jail for Races", x = "Races", y = "Average Days in Jail") + geom_text(size = 3, position = position_stack(vjust = 0.5)) + 
+#Using the labs function to retitle the legend
+labs(fill = "Race")+ 
+theme(axis.text.x = element_text(angle = 60, hjust = 1), plot.title = element_text(hjust = 0.5)) 
+```
+
+```{r}
+#Filtering the SEX data
+sexDataFrame = ccso %>% filter(SEX != "") %>% select(Days.in.Jail, SEX) %>% group_by(SEX) %>% summarise(meanSize = round(mean(Days.in.Jail), 0), n=n()) %>% arrange(desc(n))
+#Creating the ggplot for SEX
+Sex = ggplot(sexDataFrame, aes(x = SEX, y = meanSize,  fill = SEX, label = n)) + geom_bar(stat = "identity") + theme_minimal() + labs(title = "Average Days in Jail For Each Sex", x = "Sex", y = "Average Days in Jail", fill = "Sex") + theme(plot.title = element_text(hjust = 0.5)) + geom_text(size = 3, position = position_stack(vjust = 0.5))
+```
+
+
+```{r}
+#Filtering the Employment Data
+EmploymentStatusData = ccso %>% select(Days.in.Jail, EMPLOYMENT.STATUS) %>% group_by(EMPLOYMENT.STATUS) %>% summarise(meanSize = round(mean(Days.in.Jail), 0), n=n()) %>% arrange(desc(n))
+#Plotting the Employment data by the top 5 categories
+EmploymentStatus = ggplot(EmploymentStatusData[0:5, ], aes(x = EMPLOYMENT.STATUS, y = meanSize, fill = EMPLOYMENT.STATUS, label = n)) + geom_bar(stat = "identity") + theme_minimal() + labs(title = "Average days in Jail for Employment Status", x = "Employment Status", y = "Average Days in Jail") + geom_text(size = 3, position = position_stack(vjust = 0.5)) +
+#Used the labs function to rename the legend title
+labs(fill = "Employment Status")+
+theme(axis.text.x = element_text(angle = 60, hjust = 1), plot.title = element_text(hjust = 0.5)) 
+
+```
+
+
+
+```{r}
+#Filtetring the city data
+cityDataFrame = ccso %>% select(Days.in.Jail, CITY) %>% group_by(CITY) %>% summarise(meanSize = round(mean(Days.in.Jail), 0), n=n()) %>% arrange(desc(n))
+#Plotting the City ggplot
+City = ggplot(cityDataFrame[0:5,], aes(x = CITY, y = meanSize, fill = CITY, label = n)) + geom_bar(stat = "identity") + theme_minimal() + labs(title = "Average Days in Jail Depending on City of Origin", x = "City of Origin", y = "Average Days in Jail") + theme(plot.title = element_text(hjust = 0.5)) +
+  labs(fill = "City") +
+  geom_text(size = 3, position = position_stack(vjust = 0.5))
+```
+
+
+```{r}
+#Filtering the Citizenship data
+CitizenshipData = ccso %>% filter(CITIZENSHIP != "")%>% select(Days.in.Jail, CITIZENSHIP) %>% group_by(CITIZENSHIP) %>% summarise(meanSize = round(mean(Days.in.Jail), 0), n=n()) %>% arrange(desc(n))
+#Plotting the graph for the variable Citizenship
+Citizen = ggplot(CitizenshipData[0:5, ], aes(x = CITIZENSHIP, y = meanSize, fill = CITIZENSHIP, label = n)) + geom_bar(stat = "identity") + theme_minimal() + labs(title = "Average days in Jail for Citizenship", x = "Citizenship", y = "Average Days in Jail") + geom_text(size = 3, position = position_stack(vjust = 0.5)) +
+labs(fill = "Citizenship") +
+theme(axis.text.x = element_text(angle = 60, hjust = 1), plot.title = element_text(hjust = 0.5)) 
+```
+
+
+```{r}
+#Filtering the marital data
+maritalDataFrame = ccso %>% select(MARITIAL.STATUS, Days.in.Jail) %>% filter(MARITIAL.STATUS != "") %>% group_by(MARITIAL.STATUS) %>% summarise(mean_size = round(mean(Days.in.Jail), 0), n = n())
+#Plotting the graph for marital data
+Marital = ggplot(maritalDataFrame, aes(x = MARITIAL.STATUS, y = mean_size,  fill = MARITIAL.STATUS, label = n)) + 
+  geom_bar(stat = "identity") + 
+  theme_minimal() + 
+  labs(title = "Average Days in Jail Depending on Marital Status", x = "Marital Status", y = "Average Days in Jail") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 60, hjust = 1)) + 
+  labs(fill = "Marital Status") +
+  geom_text(size = 3, position = position_stack(vjust = 0.5))
+```
+
+
+```{r}
+#Filtering the military data
+military_data = ccso %>% select(MILITARY, Days.in.Jail) %>% group_by(MILITARY) %>% summarise(mean_size = round(mean(Days.in.Jail), 0), n = n())
+#Plot the Military data
+Military_Level = ggplot(military_data, aes(x = MILITARY, y = mean_size,  fill = MILITARY, label = n)) + 
+  geom_bar(stat = "identity") + 
+  theme_minimal() + 
+  labs(title = "Average Days in Jail Depending on Army Status", x = "Army Status", y = "Average Days in Jail") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 60, hjust = 1)) + 
+  labs(fill = "Army Status") +
+  geom_text(size = 3, position = position_stack(vjust = 0.5))
+```
+
+
+```{r}
+#filter mid_level_data
+mid_levelData = ccso %>% select(Days.in.Jail, MID.LEVEL.CODE) %>% group_by(MID.LEVEL.CODE) %>% summarise(mean_days = round(mean(Days.in.Jail), 0), n = n()) %>%  arrange(desc(n))
+#Plot mid_level data using ggplot
+Mid_Level = ggplot(mid_levelData[0:10, ], aes(x = MID.LEVEL.CODE, y = mean_days, fill = MID.LEVEL.CODE, label = n)) + 
+  geom_bar(stat = "identity") + 
+  theme_minimal() + 
+  labs(title = "Average Days in Jail For Top 10 Crime Committed", x = "Crime Commited", y = "Average Days in Jail") + 
+  labs(fill = "Mid Level Code")+
+  theme(axis.text.x = element_text(angle = 60, hjust = 1), plot.title = element_text(hjust = 0.5)) + 
+  labs(fill = "Crime Committed") +
+  geom_text(size = 3, position = position_stack(vjust = 0.5))
+```
+
+
+
+
+```{r}
+#Filter arrestagency data
+ArrestAgencyData = ccso %>% filter(ARREST.AGENCY != "") %>%select(Days.in.Jail, ARREST.AGENCY) %>% group_by(ARREST.AGENCY) %>% summarise(meanSize = round(mean(Days.in.Jail), 0), n=n()) %>% arrange(desc(n))
+#plot based on the arrest agency data
+ArrestAgency = ggplot(ArrestAgencyData[0:10, ], aes(x = ARREST.AGENCY, y = meanSize, fill = ARREST.AGENCY, label = n)) + geom_bar(stat = "identity") + theme_minimal() + labs(title = "Average days in Jail for Arrest Agency", x = "Arrest Agency", y = "Average Days in Jail") + geom_text(size = 3, position = position_stack(vjust = 0.5)) +
+labs(fill = "Arrest Agency") +
+theme(axis.text.x = element_text(angle = 60, hjust = 1), plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+#Filter the offense level data
+offenseLevelData = ccso %>% select(Days.in.Jail, Offense.Level) %>% group_by(Offense.Level) %>% summarise(mean_size = round(mean(Days.in.Jail), 0), n = n()) 
+#plot using ggplot
+Offense_Level = ggplot(offenseLevelData, aes(x = Offense.Level, y = mean_size,  fill = Offense.Level, label = n)) + 
+  geom_bar(stat = "identity") + 
+  theme_minimal() + 
+  labs(title = "Average Days in Jail For Each Offense Level", x = "Offense Level", y = "Average Days in Jail") +
+  labs(fill = "Offense Level") +
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  geom_text(size = 3, position = position_stack(vjust = 0.5))
+
+
+```
+
+
+```{r}
+library(shiny)
+ui <- fluidPage(
+  #Create titles and authors
+titlePanel(h2("Exploring Whether Certain Races are Disproportionately Being Incarcerated In the Champaign County",align = "center")),
+fluidRow(
+    column(4, h4("By: Jonah Toch, Michael Kolimas, Munwon Jung, Mian Li, Chris Zhu"))
+  ),
+  tabsetPanel(
+    tabPanel("Information", fluid = TRUE,
+             mainPanel(
+            textOutput("info1"),
+            textOutput("info2"),
+            htmlOutput("infohtml")
+             )
+    ),
+  
+#lists which variables you can choose from to see how they affect days in jail
+    tabPanel("Discrimination Stats", fluid = TRUE,
+               sidebarLayout(
+                 sidebarPanel(radioButtons("Discrimination", "Pick the Variables You would like to see stats for", choices = c("Race", "Sex", "Employment Status", "City", "Citizenship", "Marital Status", "Military", "Arrest Agency", "Mid-Level Code", "Offense Level"), selected = "Race")),
+                 mainPanel(
+                   plotOutput("hist")
+                 )
+               )
+      ),
+      #Montly Arrest for crime category tab
+  tabPanel("Monthly Arrest by Crime Category", fluid = TRUE,
+               sidebarLayout( 
+                 sidebarPanel("Years",
+                              selectInput(inputId = "Year", 
+                                          label = "Year",
+                                          #choices = c(2011)
+                      choices =c(levels(as.factor(ccso$Booking.Year))),
+                            #choices = c(2011, 2012, 2013, 2014, 2015, 2016) 
+                            selected = "2011"
+                      )
+               ), 
+               mainPanel(
+                  plotOutput("moreidea")
+              )
+            
+            )
+      ),
+      #Predictions- Define UI tabs for Predictions Tab
+      tabPanel("Predict How Long You Would Be Sent To Jail", fluid = TRUE,
+               sidebarLayout(
+   sidebarPanel("Factors", 
+                #Slider Input for the Age
+                 sliderInput(inputId = "Age", label = "Age",
+                              min = 0, 
+                              max = max(ccso$Age.at.Arrest),
+                              value = 16, step = 1, dragRange = FALSE),
+                 #Dropdown tabs for other Factor Variables
+                 selectInput(inputId = "Race",label = "Race", 
+                             choices = c(levels(ccso$RACE)),
+                             selected = "White"),
+                 selectInput(inputId = "Employment.Status", label = "Employment Status",
+                             choices = c(levels(ccso$EMPLOYMENT.STATUS)),
+                             selected = "Employed - Full Time"),
+                 selectInput(inputId = "City",label = "City", 
+                             choices = c(levels(ccso$CITY)),
+                             selected = "CHAMPAIGN"),
+                 selectInput(inputId = "Sex", label = "Sex", 
+                             choices = c(levels(ccso$SEX)),
+                             selected = "Female"),
+                 selectInput(inputId = "Citizenship",label = "Citizenship", 
+                             choices = c(levels(ccso$CITIZENSHIP)),
+                             selected = "UNITED STATES"),
+                 selectInput(inputId = "Maritial.Status", label = "Marital Status", 
+                             choices = c(levels(ccso$MARITIAL.STATUS)),
+                             selected = "Single"),
+                 selectInput(inputId = "Military", label = "Military Service",
+                             choices = c(levels(ccso$MILITARY)),
+                             selected = "None"),
+                 selectInput(inputId = "Arrest.Agency", label = "Arrest Agency",
+                             choices = c(levels(ccso$ARREST.AGENCY)),
+                             selected = "Champaign Police Department"),
+                 selectInput(inputId = "Crime.Code", label = "Crime Committed",
+                             choices = c(levels(ccso$MID.LEVEL.CODE))),
+                 selectInput(inputId = "Offense.Level", label = "Offense Level",
+                             choices = levels(ccso$Offense.Level)),
+                 selectInput(inputId = "Bond",label = "Ablity to Pay Bond?", 
+                             choices = c("No", "Yes"),
+                             selected = "No"),
+                #Action Button to trigger start of the Predictions
+                 actionButton(inputId = "Run", label = "Predict Now!")
+    ),
+
+    #Predicions Main Panel 
+    mainPanel("How many days in Jail will you spend if...",
+              #Text output for "The Model Predicts" 
+              textOutput(outputId = "prediction_intro"),
+              tags$style(type="text/css", "#prediction_intro{
+                                color: black;
+                                font-size: 15px;}"),
+              #Text Output for the Model's Equation based of User Input
+              textOutput(outputId = "your_equation"),
+              tags$style(type="text/css", "#your_equation{
+                                color: blue;
+                                font-size: 15px;}"),
+              #Text Output for the predicted Days in Jail
+              textOutput(outputId = "prediction"),
+              tags$style(type="text/css", "#prediction{
+                                color: red;
+                                font-size: 20px;}"),
+              #Text Output for the predicted confidence interval
+              textOutput(outputId = "prediction_outro"),
+              tags$style(type="text/css", "#prediction_outro{
+                                color: black;
+                                font-size: 15px;}"),
+              #Plot output of the comparison between races for Days in jail
+              plotOutput(outputId = "comp"),
+              textOutput(outputId = "aboutmodel"),
+              #Plot output for the Model and model's qq plot
+              tags$style(type="text/css", "#aboutmodel{
+                                color: black;
+                                font-size: 20px;}"),
+              plotOutput(outputId = "modelqq")
+    )
+  )
+)))
+
+
+               
+               
+               
+               
+  
+server <- function(input, output) {
+  dat = reactive({
+    return(input$Discrimination) #returns from the UI what variable was selected
+  })
+  # if the user selects a variable, it will output the plot for the variable selected
+  output$hist = renderPlot({
+  if (input$Discrimination == "Sex") {
+    Sex
+  } else if (input$Discrimination == "Race") {
+    Race
+  }
+    else  if (input$Discrimination == "City"){
+      City
+    }
+    else if (input$Discrimination == "Employment Status") {
+      EmploymentStatus
+    }
+     else if (input$Discrimination == "Citizenship") {
+      Citizen
+     }
+     else if (input$Discrimination == "Marital Status") {
+      Marital
+     }
+     else if (input$Discrimination == "Military") {
+      Military_Level
+     }
+     else if (input$Discrimination == "Arrest Agency") {
+      ArrestAgency
+     }
+     else if (input$Discrimination == "Mid-Level Code") {
+      Mid_Level
+     }
+     else if (input$Discrimination == "Offense Level") {
+      Offense_Level
+     }
+
+  })
+
+  
+
+  #output for intro text
+  output$infohtml = renderUI({
+    HTML(paste('Goal: This shiny application was made to help identify whether certain factors such as race, employment status, and country of origin affect the rate at which people are incarcerated and for how long.', "The Dataset: We are using the CCSO Bookings Data. The dataset contains over 67764 observations and 12 columns for individuals who were booked into jail in Champaign County between the years 2011-2016. The individuals are not identifiable based on personal identity, but they are given unique jacket numbers. The demographics of the people, reasons for being booked, and crime code are also given in the data. The original source is the Champaign County Sheriff Office (CCSO). For more information, you can check https://github.com/CUHackNight/JailData.", "The Process: We utilized GitHub, ggplot, and linear regression to visualize key features of the data.", "Conclusion: We are hoping these visualizations help point out the inequality in the Champaign County Police system.", sep = '<p/>' ))
+  })
+  
+  #Output for the model's fit text and qq plot
+  output$aboutmodel = renderText({
+    paste("The Model's Fit")})
+  output$modelqq = renderPlot({
+   modelqq})
+  #output for the text before predictions
+  output$prediction_intro = renderText({paste("The model predicts you will spend:")})
+ 
+  #Create line graph for tab 'Monthly Arrest by Crime Category'
+  output$moreidea = renderPlot({
+  #fliter the top 5 most common reasons for arrested
+   year_info = subset(ccso, ccso$Booking.Year == as.numeric(input$Year)) %>%
+  select(Booking.Month, MID.LEVEL.CODE) %>%
+  filter(MID.LEVEL.CODE == 'Battery' | MID.LEVEL.CODE == 'Traffic Offenses'| MID.LEVEL.CODE == 'Driving Under the Influence'| MID.LEVEL.CODE == 'Warrants & Summons'| MID.LEVEL.CODE == 'Theft') %>%
+    # group by according to the Month and Crime category
+     group_by(Booking.Month, MID.LEVEL.CODE) %>%
+     summarise(n = n())
+   # plot the line graph using ggplot
+    ggplot(data=year_info, aes(x=Booking.Month, y=n, colour=MID.LEVEL.CODE)) +
+      geom_line() + 
+      scale_x_continuous(name="Month", limits=c(1, 13)) + 
+      labs(title = "Monthly Number of Arrest by Crime Category", x = "Month", y = "Number of Arrest",
+         color='Crime Category')
+  })
+  
+  #Predictions output - Waits for the user to hit the action button
+  observeEvent(input$Run,{
+     #Data frame containing the user's input factors
+    your_predict = data.frame(
+                    Age.at.Arrest = as.numeric(input$Age),
+                    RACE = input$Race, 
+                    EMPLOYMENT.STATUS = input$Employment.Status, 
+                    CITY =input$City, 
+                    SEX = input$Sex,
+                    CITIZENSHIP = input$Citizenship, 
+                    MARITIAL.STATUS = input$Maritial.Status, 
+                    MILITARY = input$Military,
+                    ARREST.AGENCY = input$Arrest.Agency, 
+                    MID.LEVEL.CODE = input$Crime.Code, 
+                    Offense.Level = input$Offense.Level,
+                    Bond.Posted = input$Bond)
+    #Prediction is made based of user's data frame and model
+    prediction = exp(predict(model, newdata = your_predict,
+                    interval = "confidence"))
+    #Output for the prediction text and confidence intervals. 
+    #Predictions are rounded for tidyness
+    output$prediction = renderText({paste(round(prediction[,1],0),"days in jail.")})
+    output$prediction_outro = renderText({paste("The model is 95% confident you will spend between:",round(prediction[,2],0),"and",round(prediction[,3],0),"days in jail.")})
+    #Output for user's prediction equation. Using the coefficients from the model, the user      #can see the effects of their inputs on the percent change in days in jail
+    output$your_equation  = renderText({
+     paste("% Change in Days in Jail =",
+          sum_model["Age.at.Arrest",1]*your_predict[1,"Age.at.Arrest"],"Age +",
+          sum_model[paste("RACE",your_predict[1,"RACE"],sep = ""),1],"Race +",
+          sum_model[paste("EMPLOYMENT.STATUS",your_predict[1,"EMPLOYMENT.STATUS"],
+                          sep = ""),1],"Employment Status +",
+          sum_model[paste("CITY",your_predict[1,"CITY"],sep = ""),1],"City +",
+          sum_model[paste("SEX",your_predict[1,"SEX"],sep = ""),1],"Sex +",
+          sum_model[paste("CITIZENSHIP",your_predict[1,"CITIZENSHIP"],
+                          sep = ""),1],"Citizenship +",
+          sum_model[paste("MARITIAL.STATUS",your_predict[1,"MARITIAL.STATUS"],
+                          sep = ""),1],"Marital Status +",
+          sum_model[paste("MILITARY",your_predict[1,"MILITARY"],
+                          sep = ""),1],"Military Service +",
+          sum_model[paste("ARREST.AGENCY",your_predict[1,"ARREST.AGENCY"],
+                          sep = ""),1],"Arrest Agency +",
+          ifelse(your_predict[1,"MID.LEVEL.CODE"] == "Animal Offenses",0,
+                 sum_model[paste("MID.LEVEL.CODE",your_predict[1,"MID.LEVEL.CODE"],
+                                 sep = ""),1]),"Offense Level +",
+          ifelse(your_predict[1,"Offense.Level"] == "Felony",0,
+                 sum_model[paste("Offense.Level",your_predict[1,"Offense.Level"],
+                                 sep = ""),1]),"Offense Level +",
+          ifelse(your_predict[1,"Bond.Posted"] == "No",0,
+                 sum_model[paste("Bond.Posted",your_predict[1,"Bond.Posted"],
+                                 sep = ""),1]),"Bond.Posted"
+          )
+  })
+  #Creation of the data frame for the comparison between races. The loop below omits the Race   #used by the user, and calculates the predictions for the other Race factors - holding all   #else equal in the model
+  graph_comparison = cbind(c("Your Predicted Days"), prediction, "")
+    for (i in 
+         c(levels(ccso$RACE)[which(levels(ccso$RACE) != input$Race 
+                                   & levels(ccso$RACE) != "" )])) {
+      temp.predict = exp(predict(model, newdata = data.frame(
+                    Age.at.Arrest = input$Age,
+                    #Only Race is different as to better compare to user
+                    RACE = i, 
+                    EMPLOYMENT.STATUS = input$Employment.Status, 
+                    CITY =input$City, 
+                    SEX = input$Sex,
+                    CITIZENSHIP = input$Citizenship, 
+                    MARITIAL.STATUS = input$Maritial.Status, 
+                    MILITARY = input$Military,
+                    ARREST.AGENCY = input$Arrest.Agency, 
+                    MID.LEVEL.CODE = input$Crime.Code, 
+                    Offense.Level = input$Offense.Level,
+                    Bond.Posted = input$Bond),
+                    interval = "confidence"))
+      temp = cbind(c(i),temp.predict, round((temp.predict[1]-prediction[1]),2))
+      graph_comparison = rbind(graph_comparison, temp)
+      
+    }
+    #Output for the plot graphing the differences between Races in predictions. The graph        #compares the user's predicted number of days to other Race's - with all else held equal
+    output$comp = renderPlot({
+      graph_comparison = as.data.frame(graph_comparison)
+      graph_comparison$fit = as.numeric(as.character(graph_comparison$fit))
+      
+      ggplot(data = graph_comparison)+
+        geom_bar(mapping = 
+                   aes(x = V1, y = round(fit,2),fill = V1),
+                 stat = "identity")+
+        #highlight the user's number of days with a different color
+        scale_fill_manual(values = c("grey50","grey50","grey50","grey50","red"))+
+        labs(x = "Race", y = "Days in Jail", title = "Comparision of Your Days in Jail") +
+        theme_minimal()+
+        theme(text = element_text(size = 20),  
+              axis.text.x = element_text(size = 10),
+              axis.text.y = element_text(size = 10),
+              legend.position = "none")+
+        #add a line for reference on the user's number of days
+        geom_hline(yintercept = round(graph_comparison[1,"fit"],2), color = "red")+
+        #add text of the difference in number of days between the race factors and the user
+        geom_text(aes(x = V1, y = round(fit,2),label=V5),
+                  position=position_dodge(width=0.9), size=10)
+      })
+  })
+    }
+
+shinyApp(ui = ui, server = server)
+
+```
